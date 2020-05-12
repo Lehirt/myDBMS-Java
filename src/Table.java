@@ -1,8 +1,9 @@
-import com.sun.net.httpserver.Authenticator;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Table {
 
@@ -27,11 +28,11 @@ public class Table {
      *
      * @param name 表名
      */
-    public Table(String name){
+    private Table(String name){
         this.name = name;
-        this.dictFile = new File("/idea-java-project/lehirtDBMS/dir"+"/"+userName+"/"+dbName+"/",name+".dict");
-        this.dataFile = new File("/idea-java-project/lehirtDBMS/dir"+"/"+userName+"/"+dbName+"/",name+".data");
-        this.fieldMap = new HashMap<String, Field>();
+        this.dictFile = new File("/idea-java-project/lehirtDBMS/dir"+"/"+userName+"/"+dbName+"/"+name,name+".dict");
+        this.dataFile = new File("/idea-java-project/lehirtDBMS/dir"+"/"+userName+"/"+dbName+"/"+name,name+".data");
+        this.fieldMap = new LinkedHashMap<String,Field>();
     }
 
 
@@ -74,7 +75,15 @@ public class Table {
 
 
 
-    private String addDict(Map<String,Field> fields) {
+    public String addDict(Map<String,Field> fields) {
+
+        Set<String> names = fields.keySet();
+        for (String name : names) {
+           if (fieldMap.containsKey(name)){
+               return "错误，存在重复添加的字段"+name;
+           }
+        }
+
         try(
             FileWriter fw = new FileWriter(dictFile);
             PrintWriter pw = new PrintWriter(fw,true);
