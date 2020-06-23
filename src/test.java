@@ -1,4 +1,5 @@
 
+import javax.naming.Name;
 import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -15,82 +16,6 @@ public class test {
         File dbFile = new File(userFile, "db1");
 
         Table.init(user.getName(), dbFile.getName());
-
-/*
-        String[][] lines = {
-                {"id", "int", "*"},
-                {"name", "varchar"},
-                {"height", "double"},
-                {"sex", "varchar"}
-        };
-
-        Map<String, Field> fieldMap = new LinkedHashMap<>();
-
-        for (String[] line : lines) {
-            Field field = new Field();
-            field.setName(line[0]);
-            field.setType(line[1]);
-
-            if (3 == line.length && "*".equals(line[2])) {
-                field.setPrimary(true);
-            }
-            fieldMap.put(line[0], field);
-        }
-
-        String result = null;
-
-  */
-/*
-      //测试创建，获得，添加字典  方法
-      result = Table.creatTable("table1", fieldMap);
-        System.out.println(result);
-
-        Table table1 = Table.getTable("table1");
-        result = table1.addDict(fieldMap);
-        System.out.println(result);*//*
-
-
-
-        //测试删除表方法
-        //      result=Table.dropTable("table1");
-
-        result = Table.creatTable("table1", fieldMap);
-        System.out.println("创建表---" + result);
-
-        Table table1 = Table.getTable("table1");
-
-        String[][] srcDataLines = {
-                {"1", "张三", "1.7", "man"},
-                {"2", "李四", "women"},
-                {"3", "王二", "man"},
-                {"4", "大黑", "1"},
-                {}
-
-        };
-
-        Map<String, Field> dictMap = table1.getFieldMap();
-
-        List<Map<String, String>> insertLines = new ArrayList<>();
-        for (String[] srcDataLine : srcDataLines) {
-
-            Iterator<String> fieldNameIterator = dictMap.keySet().iterator();
-
-            Map<String,String> insertData = new LinkedHashMap<>();
-            for (String fieldValues : srcDataLine) {
-                String name = fieldNameIterator.next();
-                insertData.put(name,fieldValues);
-            }
-
-            insertLines.add(insertData);
-        }
-        int i = 1;
-        for (Map<String, String> insertLine : insertLines) {
-
-            result=table1.insert(insertLine);
-            System.out.println(result + " "+i);
-            i=i+1;
-        }
-*/
 
         Scanner sc = new Scanner(System.in);
         String cmd;
@@ -117,6 +42,64 @@ public class test {
             //Pattern patternDelete=Pattern.compile("delete\\sfrom\\s(\\w+)(?:\\swhere\\s(\\w+)\\s?([<=>])\\s?([^\\s\\;]+))?((?:\\s(?:and|or)\\s(?:\\w+)\\s?(?:[<=>])\\s?(?:[^\\s\\;]+))*)?;?");
             Pattern patternDelete = Pattern.compile("delete\\sfrom\\s(\\w+)(?:\\swhere\\s(\\w+\\s?[<=>]\\s?[^\\s\\;]+(?:\\sand\\s(?:\\w+)\\s?(?:[<=>])\\s?(?:[^\\s\\;]+))*))?\\s?;");
             Matcher matcherDelete = patternDelete.matcher(cmd);
+
+            Pattern patternUpdate = Pattern.compile("update\\s(\\w+)\\sset\\s(\\w+\\s?=\\s?[^,\\s]+(?:\\s?,\\s?\\w+\\s?=\\s?[^,\\s]+)*)(?:\\swhere\\s(\\w+\\s?[<=>]\\s?[^\\s\\;]+(?:\\sand\\s(?:\\w+)\\s?(?:[<=>])\\s?(?:[^\\s\\;]+))*))?\\s?;");
+            Matcher matcherUpdate = patternUpdate.matcher(cmd);
+
+            Pattern patternSelect = Pattern.compile("select\\s(\\*|(?:(?:\\w+(?:\\.\\w+)?)+(?:\\s?,\\s?\\w+)*))\\sfrom\\s(\\w+(?:\\s?,\\s?\\w+)*)(?:\\swhere\\s([^\\;]+))?;");
+            Matcher matcherSelect = patternSelect.matcher(cmd);
+
+            while (matcherSelect.find()){
+                if ("*".equals(matcherSelect.group(1)) && null== matcherSelect.group(3)){
+                    //暂定只有一张表，且没有选择条件
+                    String tableName = matcherSelect.group(2);
+                    Table table = Table.getTable(tableName);
+                    List<Map<String,String>> datas = table.read();
+                    Map<String, Field> fieldMap = table.getFieldMap();
+
+                    for (String fieldName : fieldMap.keySet()) {
+                        System.out.printf("\t|\t%s|",fieldName);
+                    }
+                    System.out.println();
+
+                    for (Map<String, String> data : datas) {
+                        for (String fieldValue : data.values()) {
+                            System.out.printf("\t|\t%s|",fieldValue);
+                        }
+                            System.out.println();
+                    }
+
+
+                }
+            }
+
+
+            while (matcherUpdate.find()){
+                String tableName = matcherUpdate.group(1);
+                String setStr = matcherUpdate.group(2);
+                String whereStr = matcherUpdate.group(3);
+
+                Table table = Table.getTable(tableName);
+                Map<String, Field> fieldMap = table.getFieldMap();
+                Map<String,String> data = StringUtil.parseUpdateSet(setStr);
+
+                List<SingleFilter> singleFilters = new ArrayList<>();
+                if (null == whereStr){
+                    table.update(data,singleFilters);
+                }else {
+                    List<Map<String, String>> filterList = StringUtil.parseWhere(whereStr);
+                    for (Map<String, String> filterMap : filterList) {
+                        SingleFilter singleFilter = new SingleFilter(fieldMap.get(filterMap.get("fieldName")),
+                                filterMap.get("relationshipName"),filterMap.get("condition"));
+
+                        singleFilters.add(singleFilter);
+                    }
+                    table.update(data,singleFilters);
+                }
+
+            }
+
+
 
             while (matcherCreateTable.find()){
                 String tableName = matcherCreateTable.group(1);

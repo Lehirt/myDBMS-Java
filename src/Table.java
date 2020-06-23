@@ -398,7 +398,6 @@ public class Table {
         //读取数据文件
         List<Map<String,String>> srcDatas = readDatas(dataFile);
         List<Map<String,String>> filterDatas = new ArrayList<>(srcDatas);
-        Collections.copy(filterDatas, srcDatas);
         for (SingleFilter singleFilter : singleFilters) {
             filterDatas = singleFilter.singleFilterData(filterDatas);
         }
@@ -406,7 +405,6 @@ public class Table {
         writerDatas(dataFile,srcDatas);
         System.out.println("delete success");
     }
-
     /**
      * 根据给定的过滤器组，查找索引，将指定的文件数据删除
      * @param singleFilters 过滤器组
@@ -416,4 +414,47 @@ public class Table {
         deleteData(this.dataFile, singleFilters);
     }
 
+
+
+    private void updateData(File File, Map<String, String> updateDatas, List<SingleFilter> singleFilters) {
+        //读取数据
+        List<Map<String, String>> srcDatas = readDatas(File);
+
+        /**
+         *  将srcDatas集合的元素放置在filterDatas集合中。
+         *  虽然filterDatas和srcDatas是两个不同的集合，但是他们此刻拥有对同一位置元素对象的引用
+         */
+        List<Map<String,String>> filterDatas = new ArrayList<>(srcDatas);
+
+        //循环过滤
+        for (SingleFilter singleFilter : singleFilters) {
+            filterDatas = singleFilter.singleFilterData(srcDatas);
+        }
+
+        //遍历过滤后的数据，将数据的值更新为updateDatas对应的值
+        for (Map<String, String> filterData : filterDatas) {
+            for (Map.Entry<String, String> setData : updateDatas.entrySet()) {
+                //put(): 旧值被setData替换
+                filterData.put(setData.getKey(),setData.getValue());
+            }
+        }
+        System.out.println("srcDatas"+srcDatas);
+        System.out.println("filterDatas"+filterDatas);
+        writerDatas(File,srcDatas);
+    }
+
+    /**
+     *
+     * @param updateDatas
+     * @param singleFilters
+     */
+    public void update(Map<String, String> updateDatas, List<SingleFilter> singleFilters) {
+        //此处查找索引
+        updateData(this.dataFile,updateDatas,singleFilters);
+    }
+
+
+    public List<Map<String, String>> read() {
+        return readDatas(this.dataFile);
+    }
 }

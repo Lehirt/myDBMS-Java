@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 public class StringUtil {
 
-    private static Pattern relPattern = Pattern.compile("(\\w+)\\s?([<=>])\\s?([^\\s\\;]+)");
+    private final static Pattern relPattern = Pattern.compile("(\\w+)\\s?([<=>])\\s?([^\\s\\;]+)");
 
 
     public static List<Map<String,String>> parseWhere(String str){
@@ -54,4 +54,14 @@ public class StringUtil {
     }
 
 
+    public static Map<String, String> parseUpdateSet(String Str) {
+        Map<String,String> dataMap = new LinkedHashMap<>();
+        String[] setStrs = Str.trim().split(",");
+        for (String setStr : setStrs) {
+            Matcher relMatcher = relPattern.matcher(setStr);
+            relMatcher.find();
+            dataMap.put(relMatcher.group(1),relMatcher.group(3));
+        }
+        return dataMap;
+    }
 }
