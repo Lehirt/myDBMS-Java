@@ -16,7 +16,8 @@ public class test {
     private static final Pattern patternDelete = Pattern.compile("delete\\sfrom\\s(\\w+)(?:\\swhere\\s(\\w+\\s?[<=>]\\s?[^\\s\\;]+(?:\\sand\\s(?:\\w+)\\s?(?:[<=>])\\s?(?:[^\\s\\;]+))*))?\\s?;");
     private static final Pattern patternUpdate = Pattern.compile("update\\s(\\w+)\\sset\\s(\\w+\\s?=\\s?[^,\\s]+(?:\\s?,\\s?\\w+\\s?=\\s?[^,\\s]+)*)(?:\\swhere\\s(\\w+\\s?[<=>]\\s?[^\\s\\;]+(?:\\sand\\s(?:\\w+)\\s?(?:[<=>])\\s?(?:[^\\s\\;]+))*))?\\s?;");
     private static final Pattern patternSelect = Pattern.compile("select\\s(\\*|(?:(?:\\w+(?:\\.\\w+)?)+(?:\\s?,\\s?\\w+)*))\\sfrom\\s(\\w+(?:\\s?,\\s?\\w+)*)(?:\\swhere\\s([^\\;]+))?;");
-
+    //删除索引文件
+    private static final Pattern patternDeleteIndex = Pattern.compile("delete\\sindex\\s(\\w+)\\s?;");
 
 
     public static void main(String[] args) {
@@ -44,7 +45,7 @@ public class test {
             Matcher matcherUpdate = patternUpdate.matcher(cmd);
             Matcher matcherSelect = patternSelect.matcher(cmd);
 
-
+            Matcher matcherDeleteIndex = patternDeleteIndex.matcher(cmd);
 
             while (matcherSelect.find()){
                 if ("*".equals(matcherSelect.group(1)) && null== matcherSelect.group(3)){
@@ -141,17 +142,17 @@ public class test {
                 Map<String, Field> fieldMap = table.getFieldMap();
                 Map<String, String> insertData = new HashMap<>();
 
-                String[] fieldValues = matcherInsert.group(5).split(",");
+                String[] fieldValues = matcherInsert.group(5).trim().split(",");
                 //如果插入指定的字段
                 if(null != matcherInsert.group(2)){
-                    String[] fieldNames = matcherInsert.group(3).split(",");
+                    String[] fieldNames = matcherInsert.group(3).trim().split(",");
                     //
                     if (fieldValues.length != fieldNames.length){
                         return;
                     }
                     for (int i = 0; i < fieldNames.length;i++){
-                        String fieldName = fieldNames[i];
-                        String fieldValue = fieldValues[i];
+                        String fieldName = fieldNames[i].trim() ;
+                        String fieldValue = fieldValues[i].trim() ;
                         //
                         if(!fieldMap.containsKey(fieldName)){
                             return;
@@ -162,7 +163,7 @@ public class test {
                     Set<String> fieldNames = fieldMap.keySet();
                     int i = 0;
                     for (String fieldName : fieldNames) {
-                        String fieldValue = fieldValues[i];
+                        String fieldValue = fieldValues[i].trim();
                         insertData.put(fieldName,fieldValue);
                         i++;
                     }
@@ -205,6 +206,12 @@ public class test {
                     }
                     table.delete(singleFilters);
                 }
+            }
+
+            while (matcherDeleteIndex.find()){
+                String tableName = matcherDeleteIndex.group(1);
+                Table table = Table.getTable(tableName);
+                System.out.println(table.deleteIndex());
             }
 
         }
